@@ -1,5 +1,10 @@
 import {expect} from './chai-setup';
-import {ethers, deployments, getUnnamedAccounts} from 'hardhat';
+import {
+  ethers,
+  deployments,
+  getUnnamedAccounts,
+  getNamedAccounts,
+} from 'hardhat';
 import {setupUsers} from './utils';
 import {DogeVodka} from '../typechain/DogeVodka';
 
@@ -45,7 +50,7 @@ describe('DogeVodka', function () {
   });
 
   it('should revert mint attempt with lower price', async function () {
-    const {users, DogeVodka} = await setup();
+    const {users} = await setup();
 
     await expect(
       users[0].DogeVodka.mint(5, {value: (dogeVodkaPrice - 1).toString()})
@@ -53,26 +58,44 @@ describe('DogeVodka', function () {
   });
 
   it('should revert mint attempt with higher price', async function () {
-    const {users, DogeVodka} = await setup();
+    const {users} = await setup();
 
     await expect(
       users[0].DogeVodka.mint(5, {value: (dogeVodkaPrice + 1).toString()})
     ).to.be.revertedWith('Ether value sent is not correct');
   });
 
-  // it('should redeem', async function () {
-  //   const {users, DogeVodka} = await setup();
+  it('should redeem', async function () {
+    const {users, DogeVodka} = await setup();
 
-  //   await users[0].DogeVodka.mint(1, {value: dogeVodkaPrice.toString()});
+    await users[0].DogeVodka.mint(1, {value: dogeVodkaPrice.toString()});
 
-  //   await expect(users[0].DogeVodka.redeem([1])).to.emit(DogeVodka, 'Redeemed');
-  // });
+    await expect(DogeVodka.redeem(['1'])).to.emit(DogeVodka, 'Redeemed');
+  });
 
-  // it('return tokenUri without redeem', async function () {
-  //   const { users, DogeVodka } = await setup();
+  it('should redeem multiple tokens', async function () {
+    const {users, DogeVodka} = await setup();
 
-  //   await expect(
-  //     users[0].DogeVodka.mint(5, { value: (dogeVodkaPrice + 1).toString() })
-  //   ).to.be.revertedWith('Ether value sent is not correct');
-  // });
+    await users[0].DogeVodka.mint(5, {value: (dogeVodkaPrice * 5).toString()});
+
+    await expect(DogeVodka.redeem(['1', '2', '3', '4', '5'])).to.emit(
+      DogeVodka,
+      'Redeemed'
+    );
+  });
+
+  it('should return redeemed and non redeemed tokenUris', async function () {
+    const {users, DogeVodka} = await setup();
+
+    await users[0].DogeVodka.mint(1, {value: dogeVodkaPrice.toString()});
+
+    await DogeVodka.setBaseURI('ipfs://notRedeemed/');
+    await DogeVodka.setRedeemedBaseURI('ipfs://redeemed/');
+
+    await expect(await DogeVodka.tokenURI(1)).to.equal('ipfs://notRedeemed/1');
+
+    await expect(DogeVodka.redeem(['1'])).to.emit(DogeVodka, 'Redeemed');
+
+    await expect(await DogeVodka.tokenURI(1)).to.equal('ipfs://redeemed/1');
+  });
 });

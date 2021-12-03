@@ -47,7 +47,7 @@ contract DogeVodka is ERC721Enumerable, Ownable {
     }
 
     function redeem(uint256[] memory tokenIds) public onlyOwner {
-        for (uint256 i = 0; i <= tokenIds.length; i++) redeemedToken[tokenIds[i]] = true;
+        for (uint256 i = 0; i < tokenIds.length; i++) redeemedToken[tokenIds[i]] = true;
 
         emit Redeemed(tokenIds);
     }
